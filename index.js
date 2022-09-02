@@ -7,63 +7,27 @@ const { Neo4jGraphQLAuthJWTPlugin } = require("@neo4j/graphql-plugin-auth");
 dotenv.config();
 
 const typeDefs = gql`
-    type CustomUser {
-        id: String
-        inboxes: [Inbox!]! @relationship(type: "OWNS", direction: OUT)
-    }
-    
-    type Inbox {
-        ownerId: String
-        messages: [Message!]! @relationship(type: "CONTAINS", direction: OUT)
+    type Component {
+        uuid: String
+        downstreamProcesses: [Process!]! @relationship(type: "INPUT", direction: OUT)
     }
 
-    type Message {
-        ownerId: String
-        subject: String
-        body: String
-        attachments: [Attachment!]! @relationship(type: "ATTACHED_TO", direction: IN)
+    type Process {
+        uuid: String
+        productOutput: ProductVariant @relationship(type: "OUTPUT", direction: OUT)
+        componentOutputs: [Component!]! @relationship(type: "OUTPUT", direction: OUT)
     }
 
-    type Attachment {
-        ownerId: String
-        contents: String
+    type ProductVariant {
+        uuid: String
+        brand: String
+        product: Product @relationship(type: "VARIANT_OF", direction: OUT)
     }
-    
-    extend type CustomUser @auth(
-        rules: [
-            {
-                operations: [READ],
-                allow: { id: "$context.user.id" },
-            }
-        ]
-    )
 
-    extend type Inbox @auth(
-        rules: [
-            {
-                operations: [READ],
-                allow: { ownerId: "$context.user.id" },
-            }
-        ]
-    )
-
-    extend type Message @auth(
-        rules: [
-            {
-                operations: [READ],
-                allow: { ownerId: "$context.user.id" },
-            }
-        ]
-    )
-
-    extend type Attachment @auth(
-        rules: [
-            {
-                operations: [READ],
-                allow: { ownerId: "$context.user.id" },
-            }
-        ]
-    )
+    type Product {
+        uuid: String
+        brand: String
+    }
 `;
 
 // To run this demo, provide a .env file next to index.js,
