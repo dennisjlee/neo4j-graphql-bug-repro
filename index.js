@@ -20,13 +20,24 @@ const typeDefs = gql`
 
     type ProductVariant {
         uuid: String
-        brand: String
         product: Product @relationship(type: "VARIANT_OF", direction: OUT)
     }
 
     type Product {
         uuid: String
-        brand: String
+        company: Company @relationship(type: "FOR_COMPANY", direction: OUT)
+    }
+    
+    type Company {
+        uuid: String
+        brand: String!
+        @auth(
+            rules: [
+                { operations: [READ], allow: { brand: "$context.user.brand" } }
+            ]
+        )
+        
+        products: [Product!]! @relationship(type: "FOR_COMPANY", direction: IN)
     }
 `;
 
@@ -50,7 +61,7 @@ neoSchema.getSchema().then((schema) => {
   const server = new ApolloServer({
     schema,
     context: _params => ({
-      user: {id: "abc"}
+      user: {id: "abc", brand: "my-company"}
     })
   });
 
