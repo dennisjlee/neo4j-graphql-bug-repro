@@ -1,6 +1,7 @@
 const dotenv = require('dotenv');
 const {Neo4jGraphQL} = require("@neo4j/graphql");
 const {ApolloServer, gql} = require("apollo-server");
+const {ApolloServerPluginLandingPageGraphQLPlayground} = require("apollo-server-core");
 const neo4j = require("neo4j-driver");
 const { Neo4jGraphQLAuthJWTPlugin } = require("@neo4j/graphql-plugin-auth");
 
@@ -9,35 +10,25 @@ dotenv.config();
 const typeDefs = gql`
     type Component {
         uuid: String
+        upstreamProcess: Process @relationship(type: "OUTPUT", direction: IN)
         downstreamProcesses: [Process!]! @relationship(type: "INPUT", direction: OUT)
     }
 
     type Process {
         uuid: String
-        productOutput: ProductVariant @relationship(type: "OUTPUT", direction: OUT)
         componentOutputs: [Component!]! @relationship(type: "OUTPUT", direction: OUT)
+        componentInputs: [Component!]! @relationship(type: "INPUT", direction: IN)
     }
 
     type ProductVariant {
         uuid: String
+        brand: String
         product: Product @relationship(type: "VARIANT_OF", direction: OUT)
     }
 
     type Product {
         uuid: String
-        company: Company @relationship(type: "FOR_COMPANY", direction: OUT)
-    }
-    
-    type Company {
-        uuid: String
-        brand: String!
-        @auth(
-            rules: [
-                { operations: [READ], allow: { brand: "$context.user.brand" } }
-            ]
-        )
-        
-        products: [Product!]! @relationship(type: "FOR_COMPANY", direction: IN)
+        brand: String
     }
 `;
 
@@ -62,7 +53,8 @@ neoSchema.getSchema().then((schema) => {
     schema,
     context: _params => ({
       user: {id: "abc", brand: "my-company"}
-    })
+    }),
+    plugins: [ApolloServerPluginLandingPageGraphQLPlayground()]
   });
 
   server.listen().then(({url}) => {
